@@ -198,6 +198,8 @@ async function runModelIteration({
 		const result = await providerImpl.run(config.model, promptValue, {
 			webSearch: config.webSearch,
 			version: config.version,
+			country: brand.country,
+			location: brand.location,
 		});
 
 		// `webQueries` is stored exactly as the provider reported it — engines do

@@ -141,6 +141,55 @@ describe("cloro provider", () => {
 		expect(result.modelVersion).toBe("gpt-5-3-mini");
 	});
 
+	it("asks from the brand's country and, on the Google surfaces, its city", async () => {
+		vi.useFakeTimers();
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValueOnce(jsonResponse({ success: true, task: { id: "task-geo", status: "QUEUED" } }))
+			.mockResolvedValueOnce(
+				jsonResponse({ task: { id: "task-geo", status: "COMPLETED" }, response: AI_MODE_RESPONSE }),
+			);
+		vi.stubGlobal("fetch", fetchMock);
+
+		const promise = cloro.run("google-ai-mode", "cel mai bun restaurant italian din Deva", {
+			webSearch: true,
+			country: "ro",
+			location: "Deva,Hunedoara County,Romania",
+		});
+		await vi.runAllTimersAsync();
+		await promise;
+
+		expect(JSON.parse(fetchMock.mock.calls[0][1].body).payload).toEqual({
+			prompt: "cel mai bun restaurant italian din Deva",
+			country: "RO",
+			location: "Deva,Hunedoara County,Romania",
+			include: { markdown: true },
+		});
+	});
+
+	it("keeps ChatGPT at country level when the brand also names a city", async () => {
+		vi.useFakeTimers();
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValueOnce(jsonResponse({ success: true, task: { id: "task-ro", status: "QUEUED" } }))
+			.mockResolvedValueOnce(
+				jsonResponse({ task: { id: "task-ro", status: "COMPLETED" }, response: CHATGPT_RESPONSE }),
+			);
+		vi.stubGlobal("fetch", fetchMock);
+
+		const promise = cloro.run("chatgpt", "unde mănânc paste bune în Deva?", {
+			webSearch: true,
+			country: "RO",
+			location: "Deva,Hunedoara County,Romania",
+		});
+		await vi.runAllTimersAsync();
+		await promise;
+
+		const payload = JSON.parse(fetchMock.mock.calls[0][1].body).payload;
+		expect(payload.country).toBe("RO");
+		expect(payload).not.toHaveProperty("location");
+	});
+
 	it("maps Google AI Overview onto the Google Search task and unwraps the overview", async () => {
 		vi.useFakeTimers();
 		const fetchMock = vi

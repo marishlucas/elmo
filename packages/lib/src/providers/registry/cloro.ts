@@ -1,7 +1,7 @@
 import { getCredential } from "../../secrets";
 import { type Citation, cloroAnswer, extractCitationsFromCloro } from "../../text-extraction";
 import { configuredWhen, reportedWebQueries } from "../config";
-import type { ModelConfig, Provider, ScrapeResult } from "../types";
+import type { ModelConfig, Provider, ProviderOptions, ScrapeResult } from "../types";
 import { pollTask, type TaskState } from "./poll-task";
 import { failureDetails, isTransientStatus, queriesFromKeys, responseError } from "./scrape-shared";
 
@@ -44,7 +44,11 @@ const CLORO_GENERATION_TIMEOUT_MS = 10 * 60 * 1000;
 const CLORO_TOTAL_TIMEOUT_MS = 60 * 60 * 1000;
 
 // Cloro localizes every answer; default to a US audience.
-const CLORO_COUNTRY = "US";
+/** Used when a brand names no country of its own. */
+const CLORO_DEFAULT_COUNTRY = (process.env.CLORO_COUNTRY || "US").toUpperCase();
+
+/** The Google surfaces take a city as well as a country; the others are country-level only. */
+const CLORO_LOCATION_TASKS = new Set(["AIMODE", "GOOGLE"]);
 
 /** Statuses meaning "accepted, not started" — see CLORO_GENERATION_TIMEOUT_MS. */
 const CLORO_QUEUED_STATUSES = new Set(["QUEUED", "PENDING", "CREATED", "SCHEDULED"]);
@@ -145,7 +149,7 @@ export const cloro: Provider = {
 		return null;
 	},
 
-	async run(model: string, prompt: string): Promise<ScrapeResult> {
+	async run(model: string, prompt: string, options?: ProviderOptions): Promise<ScrapeResult> {
 		const task = CLORO_TASKS[model];
 		if (!task) {
 			throw new Error(`Cloro: no task mapping for model "${model}". Supported: ${Object.keys(CLORO_TASKS).join(", ")}`);
@@ -153,10 +157,13 @@ export const cloro: Provider = {
 
 		const payload: Record<string, any> = {
 			[task.field]: prompt,
-			country: CLORO_COUNTRY,
+			country: options?.country?.toUpperCase() || CLORO_DEFAULT_COUNTRY,
 			include: task.include,
 			...task.params,
 		};
+		if (options?.location && CLORO_LOCATION_TASKS.has(task.taskType)) {
+			payload.location = options.location;
+		}
 
 		const response = await runAsyncTask(task.taskType, payload);
 		const answer = cloroAnswer(response) ?? {};

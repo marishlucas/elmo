@@ -37,6 +37,10 @@ export const brands = pgTable(
 		website: text("website").notNull(),
 		additionalDomains: text("additional_domains").array().notNull().default([]),
 		aliases: text("aliases").array().notNull().default([]),
+		/** ISO 3166-1 alpha-2 country the answer engines are asked from, e.g. "RO". Null keeps each provider's default. */
+		country: text("country"),
+		/** Google canonical location name ("City,Region,Country") for the engines that take a city, such as Google AI Mode. */
+		location: text("location"),
 		enabled: boolean("enabled").default(true).notNull(),
 		onboarded: boolean("onboarded").default(false).notNull(),
 		delayOverrideHours: integer("delay_override_hours"),

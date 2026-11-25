@@ -13,6 +13,10 @@ export interface ScrapeResult {
 export interface ProviderOptions {
 	webSearch?: boolean;
 	version?: string;
+	/** ISO 3166-1 alpha-2 country to ask from. Providers that can't localize ignore it. */
+	country?: string | null;
+	/** Google canonical location name, for providers and engines that target a city. */
+	location?: string | null;
 }
 
 export interface StructuredResearchOptions<T> {

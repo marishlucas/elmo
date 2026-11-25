@@ -437,6 +437,17 @@
 							"type": "string"
 						}
 					},
+					"country": {
+						"type": ["string", "null"],
+						"pattern": "^[A-Za-z]{2}$",
+						"description": "ISO 3166-1 alpha-2 country the answer engines are asked from, e.g. \"RO\". Null clears it."
+					},
+					"location": {
+						"type": ["string", "null"],
+						"minLength": 1,
+						"maxLength": 200,
+						"description": "Google canonical location name (\"City,Region,Country\") for the engines that take a city. Null clears it."
+					},
 					"competitors": {
 						"type": "array",
 						"items": {
@@ -519,6 +530,17 @@
 							"type": "string"
 						}
 					},
+					"country": {
+						"type": ["string", "null"],
+						"pattern": "^[A-Za-z]{2}$",
+						"description": "ISO 3166-1 alpha-2 country the answer engines are asked from, e.g. \"RO\". Null clears it."
+					},
+					"location": {
+						"type": ["string", "null"],
+						"minLength": 1,
+						"maxLength": 200,
+						"description": "Google canonical location name (\"City,Region,Country\") for the engines that take a city. Null clears it."
+					},
 					"enabled": {
 						"type": "boolean",
 						"description": "Whether the brand is sampled at all. **Modifiable only with an instance admin key**: setting it with an organization key is a `403`, because disabling ends tracking silently while the plan keeps being billed and no dashboard control does it at any role."
@@ -547,6 +569,14 @@
 						"items": {
 							"type": "string"
 						}
+					},
+					"country": {
+						"type": ["string", "null"],
+						"description": "ISO 3166-1 alpha-2 country the answer engines are asked from, e.g. \"RO\". Null uses each provider's default."
+					},
+					"location": {
+						"type": ["string", "null"],
+						"description": "Google canonical location name (\"City,Region,Country\") for the engines that take a city, such as Google AI Mode. Null asks at country level."
 					},
 					"enabled": {
 						"type": "boolean"
@@ -583,6 +613,8 @@
 					"name",
 					"domains",
 					"aliases",
+					"country",
+					"location",
 					"enabled",
 					"onboarded",
 					"createdAt",

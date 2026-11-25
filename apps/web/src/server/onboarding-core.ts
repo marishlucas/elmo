@@ -53,6 +53,15 @@ export const createBrandInputSchema = z.object({
 	name: z.string().min(1),
 	domains: z.array(z.string()).min(1),
 	aliases: z.array(z.string()).optional(),
+	/** ISO 3166-1 alpha-2 country the engines are asked from, e.g. "RO". Null clears it. */
+	country: z
+		.string()
+		.regex(/^[A-Za-z]{2}$/, "country must be an ISO 3166-1 alpha-2 code")
+		.transform((value) => value.toUpperCase())
+		.nullable()
+		.optional(),
+	/** Google canonical location name ("City,Region,Country") for engines that take a city. Null clears it. */
+	location: z.string().trim().min(1).max(200).nullable().optional(),
 	competitors: z.array(competitorInputSchema).optional(),
 	prompts: z.array(promptInputSchema).optional(),
 	/** Omitted, an admin key provisions a new organization — the only way to
@@ -64,6 +73,15 @@ export const updateBrandBodySchema = z.object({
 	brandName: z.string().min(1).optional(),
 	domains: z.array(z.string()).min(1).optional(),
 	aliases: z.array(z.string()).optional(),
+	/** ISO 3166-1 alpha-2 country the engines are asked from, e.g. "RO". Null clears it. */
+	country: z
+		.string()
+		.regex(/^[A-Za-z]{2}$/, "country must be an ISO 3166-1 alpha-2 code")
+		.transform((value) => value.toUpperCase())
+		.nullable()
+		.optional(),
+	/** Google canonical location name ("City,Region,Country") for engines that take a city. Null clears it. */
+	location: z.string().trim().min(1).max(200).nullable().optional(),
 	enabled: z.boolean().optional(),
 });
 
@@ -83,6 +101,8 @@ export interface CreateBrandInput {
 	website: string;
 	additionalDomains?: string[];
 	aliases?: string[];
+	country?: string | null;
+	location?: string | null;
 	competitors?: CompetitorInput[];
 	prompts?: PromptInput[];
 	/** Null provisions one named after the brand id, which is right for an admin
@@ -98,6 +118,8 @@ export interface UpdateBrandInput {
 	website?: string;
 	additionalDomains?: string[];
 	aliases?: string[];
+	country?: string | null;
+	location?: string | null;
 	enabled?: boolean;
 }
 
@@ -109,6 +131,8 @@ export interface BrandResult {
 	organizationId: string;
 	domains: string[];
 	aliases: string[];
+	country: string | null;
+	location: string | null;
 	enabled: boolean;
 	onboarded: boolean;
 	enabledModels: string[] | null;
@@ -138,6 +162,8 @@ export function buildBrandResult(row: typeof brands.$inferSelect): BrandResult {
 		organizationId: row.organizationId,
 		domains: [websiteHost, ...row.additionalDomains],
 		aliases: row.aliases,
+		country: row.country,
+		location: row.location,
 		enabled: row.enabled,
 		onboarded: row.onboarded,
 		enabledModels: row.enabledModels,
@@ -169,6 +195,8 @@ export function apiCreateInputToInternal(input: z.infer<typeof createBrandInputS
 		website,
 		additionalDomains,
 		aliases: input.aliases,
+		country: input.country,
+		location: input.location,
 		competitors: input.competitors,
 		prompts: input.prompts,
 		organizationId: input.organizationId ?? null,
@@ -183,6 +211,8 @@ export function apiUpdateInputToInternal(
 		brandId,
 		brandName: input.brandName,
 		aliases: input.aliases,
+		country: input.country,
+		location: input.location,
 		enabled: input.enabled,
 	};
 	if (input.domains !== undefined) {
@@ -304,6 +334,8 @@ export async function createBrand(input: CreateBrandInput): Promise<BrandResult>
 				website: formattedWebsite,
 				additionalDomains,
 				aliases,
+				country: input.country ?? null,
+				location: input.location ?? null,
 				enabled: true,
 				onboarded: true,
 			})
@@ -366,6 +398,8 @@ export async function updateBrand(input: UpdateBrandInput): Promise<BrandResult>
 		patch.additionalDomains = dedupeDomains(input.additionalDomains).filter((d) => d !== websiteHost);
 	}
 	if (input.aliases !== undefined) patch.aliases = dedupeAliases(input.aliases);
+	if (input.country !== undefined) patch.country = input.country;
+	if (input.location !== undefined) patch.location = input.location;
 	if (input.enabled !== undefined) patch.enabled = input.enabled;
 
 	await db.update(brands).set(patch).where(eq(brands.id, input.brandId));
